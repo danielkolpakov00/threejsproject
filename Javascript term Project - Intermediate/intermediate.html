@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSAP Smooth Scroll with Liquid Fill Text</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      height: 300vh; /* Adjust height based on the number of sections */
+    }
+    .section {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .section1 {
+      background-color: #ff6666;
+    }
+    .section2 {
+      background-color: #66b2ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .section3 {
+      background-color: #66ff66;
+    }
+    .text {
+      color: white;
+      font-size: 4rem;
+      text-align: center;
+    }
+    svg {
+      width: 80%;
+      max-width: 600px;
+    }
+    text {
+      fill: none;
+      stroke: white;
+      stroke-width: 2;
+      font-family: Arial, sans-serif;
+      font-size: 10rem;
+    }
+    .liquid {
+      fill: blue;
+      opacity: 0.7;
+    }
+    #threejs-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/"
+      }
+    }
+  </script>
+  <div id="scene-container"></div>
+  <div class="container">
+    <div class="section section1">
+      <svg viewBox="0 0 600 200">
+        <defs>
+          <mask id="textMask">
+            <text x="50%" y="50%" text-anchor="middle" dy=".35em" fill="white">Project 1</text>
+          </mask>
+        </defs>
+        <rect class="liquid" x="0" y="0" width="600" height="200" mask="url(#textMask)"></rect>
+        <text x="50%" y="50%" text-anchor="middle" dy=".35em">Project 1</text>
+      </svg>
+    </div>
+    <div class="section section2" id="scene-container">
+      <div id="threejs-container"></div>
+    </div>
+    <div class="section section3">
+      <h1 class="text">Section 3</h1>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollToPlugin.min.js"></script>
+  <script src="scripts/main/main.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+    let sections = gsap.utils.toArray('.section');
+
+    gsap.to(sections, {
+      yPercent: -100 * (sections.length - 1),
+      ease: "none",
+      scrollTrigger: {
+        trigger: ".container",
+        start: "top top",
+        end: "+=" + (sections.length - 1) * 100 + "%",
+        scrub: true,
+        pin: true,
+        snap: {
+          snapTo: 1 / (sections.length - 1),
+          duration: { min: 0.5, max: 1 },
+          ease: "power1.inOut"
+        }
+      }
+    });
+
+    sections.forEach(section => {
+      let text = section.querySelector('.text');
+      if (text) {
+        gsap.from(text, {
+          opacity: 0,
+          y: 50,
+          duration: 1,
+          ease: "power1.out",
+          scrollTrigger: {
+            trigger: section,
+            start: "top center",
+            end: "bottom center",
+            toggleActions: "play none none reset"
+          }
+        });
+      }
+    });
+
+    gsap.fromTo(".liquid", 
+      { y: 200 }, 
+      { y: -10, duration: 3, ease: "power1.inOut", repeat: -1, yoyo: true, 
+        scrollTrigger: {
+          trigger: '.section1',
+          start: 'top center',
+          end: 'bottom center',
+          toggleActions: 'play pause resume reset'
+        }
+    });
+
+    function initThreeJS() {
+      const container = document.getElementById('threejs-container');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      const geometry = new THREE.BoxGeometry();
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+
+      camera.position.z = 5;
+
+      function animate() {
+        requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+    }
+
+    initThreeJS();
+
+    gsap.fromTo(".section3 .text", {
+      scale: 0.5,
+      rotation: -180,
+      color: "#ff0000"
+    }, {
+      scale: 2,
+      rotation: 0,
+      color: "#f28a8a",
+      duration: 2,
+      ease: "elastic.inOut(1, 0.3)",
+      scrollTrigger: {
+        trigger: ".section3",
+        start: "top center",
+        end: "bottom center",
+        toggleActions: "play none none none"
+      }
+    });
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+      }
+    }
+  </script>
+<script type="module" src="scripts/BufferGeometryUtils.js"></script>
+
+<script type="module" src="scripts/GLTFLoader.js"></script>
+<script src="scripts/gsap.min.js"></script>
+<script type="module" src="scripts/OrbitControls.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script> -->
+<script type="module" src="scripts/main/main.js"></script>
+</body>
+</html>
